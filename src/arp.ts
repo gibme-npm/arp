@@ -1,10 +1,30 @@
-// Copyright (c) 2016-2022 Brandon Lehmann
+// Copyright (c) 2016-2022, Brandon Lehmann <brandonlehmann@gmail.com>
 //
-// Please see the included LICENSE file for more information.
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 
 import { spawn } from 'child_process';
 import { isIP } from 'net';
 
+/** @ignore */
+const defaultGateway = require('default-gateway');
+
+/** @ignore */
 const linux = async (ip: string): Promise<string> => {
     return new Promise((resolve, reject) => {
         const ping = spawn('ping', ['-c', '1', ip]);
@@ -41,6 +61,7 @@ const linux = async (ip: string): Promise<string> => {
     });
 };
 
+/** @ignore */
 const windows = async (ip: string): Promise<string> => {
     return new Promise((resolve, reject) => {
         const ping = spawn('ping', ['-n', '1', ip]);
@@ -79,6 +100,7 @@ const windows = async (ip: string): Promise<string> => {
     });
 };
 
+/** @ignore */
 const macintosh = async (ip: string): Promise<string> => {
     return new Promise((resolve, reject) => {
         const ping = spawn('ping', ['-c', '1', ip]);
@@ -116,32 +138,47 @@ const macintosh = async (ip: string): Promise<string> => {
     });
 };
 
-/**
- * Retrieves the MAC address of the directly connected device at the specified IP address
- *
- * @param ip
- * @param separator
- * @constructor
- */
-const ARP = async (ip: string, separator = ':'): Promise<string> => {
-    if (isIP(ip) === 0) {
-        throw new Error(`${ip} is not a valid IP address`);
+export default abstract class ARP {
+    /**
+     * Retrieves the MAC address of the directly connected device at the specified IP address
+     *
+     * @param ip
+     * @param separator
+     */
+    public static async lookup (ip: string, separator = ':'): Promise<string> {
+        if (isIP(ip) === 0) {
+            throw new Error(`${ip} is not a valid IP address`);
+        }
+
+        let result: string;
+
+        if (process.platform.includes('linux')) {
+            result = await linux(ip);
+        } else if (process.platform.includes('win')) {
+            result = await windows(ip);
+        } else if (process.platform.includes('darwin')) {
+            result = await macintosh(ip);
+        } else {
+            throw new Error('Unknown platform detected');
+        }
+
+        return result.split(':')
+            .join(separator);
     }
 
-    let result: string;
-
-    if (process.platform.includes('linux')) {
-        result = await linux(ip);
-    } else if (process.platform.includes('win')) {
-        result = await windows(ip);
-    } else if (process.platform.includes('darwin')) {
-        result = await macintosh(ip);
-    } else {
-        throw new Error('Unknown platform detected');
+    /**
+     * Retrieves the system gateway (default route) ipv4 address
+     */
+    public static async get_gateway_ipv4 (): Promise<string | undefined> {
+        return (await defaultGateway.v4()).gateway;
     }
 
-    return result.split(':')
-        .join(separator);
-};
+    /**
+     * Retrieves the system gateway (default route) ipv6 address
+     */
+    public static async get_gateway_ipv6 (): Promise<string | undefined> {
+        return (await defaultGateway.v6()).gateway;
+    }
+}
 
-export default ARP;
+export { ARP };
