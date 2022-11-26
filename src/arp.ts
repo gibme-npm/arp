@@ -41,7 +41,9 @@ const linux = async (ip: string): Promise<string> => {
 
             arp.on('close', code => {
                 if (code !== 0) {
-                    return reject(new Error('Error running arp: ' + code + ' ' + errStream));
+                    return reject(new Error(
+                        `Error running arp via [${arp.spawnfile} ${arp.spawnargs.join(' ')}]: ` +
+                        `Code #${code}` + '\n' + errStream));
                 }
 
                 const table = buffer.split('\n');
@@ -78,7 +80,9 @@ const windows = async (ip: string): Promise<string> => {
 
             arp.on('close', code => {
                 if (code !== 0) {
-                    return reject(new Error('Error running arp: ' + code + ' ' + errStream));
+                    return reject(new Error(
+                        `Error running arp via [${arp.spawnfile} ${arp.spawnargs.join(' ')}]: ` +
+                        `Code #${code}` + '\n' + errStream));
                 }
 
                 const table = buffer.split('\r\n');
@@ -117,7 +121,9 @@ const macintosh = async (ip: string): Promise<string> => {
 
             arp.on('close', code => {
                 if (code !== 0 && errStream !== '') {
-                    return reject(new Error('Error running arp: ' + code + ' ' + errStream));
+                    return reject(new Error(
+                        `Error running arp via [${arp.spawnfile} ${arp.spawnargs.join(' ')}]: ` +
+                        `Code #${code}` + '\n' + errStream));
                 }
 
                 const parts = buffer.split(' ')
@@ -154,10 +160,10 @@ export default abstract class ARP {
 
         if (process.platform.includes('linux')) {
             result = await linux(ip);
-        } else if (process.platform.includes('win')) {
-            result = await windows(ip);
         } else if (process.platform.includes('darwin')) {
             result = await macintosh(ip);
+        } else if (process.platform.includes('win')) {
+            result = await windows(ip);
         } else {
             throw new Error('Unknown platform detected');
         }
