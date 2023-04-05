@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022, Brandon Lehmann <brandonlehmann@gmail.com>
+// Copyright (c) 2016-2023, Brandon Lehmann <brandonlehmann@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,10 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import assert from 'assert';
+import * as assert from 'assert';
 import { it, describe } from 'mocha';
 import ARP from '../src/arp';
-
 describe('ARP Tests', () => {
     let gatewayv4: string | undefined;
     let gatewayv6: string | undefined;
@@ -43,7 +42,7 @@ describe('ARP Tests', () => {
 
         const check = await ARP.get_gateway_ipv4();
 
-        assert(gatewayv4 === check);
+        assert.equal(gatewayv4, check);
     });
 
     it('Get Gateway IPv6', async function () {
@@ -53,7 +52,7 @@ describe('ARP Tests', () => {
 
         const check = await ARP.get_gateway_ipv6();
 
-        assert(gatewayv6 === check);
+        assert.equal(gatewayv6, check);
     });
 
     it('Lookup IPv4 Gateway', async function () {
@@ -63,7 +62,7 @@ describe('ARP Tests', () => {
 
         const check = await ARP.lookup(gatewayv4);
 
-        assert(check.length !== 0);
+        assert.notEqual(check.length, 0);
     });
 
     it('Lookup IPv6 Gateway', async function () {
@@ -78,13 +77,11 @@ describe('ARP Tests', () => {
 
     it('Lookup 8.8.8.8 [fails]', async () => {
         ARP.lookup('8.8.8.8')
-            .then(() => assert(false))
-            .catch(() => assert(true));
+            .then(() => assert.fail());
     });
 
     it('Lookup 1.1.1.1 [fails]', async () => {
         ARP.lookup('1.1.1.1')
-            .then(() => assert(false))
-            .catch(() => assert(true));
+            .then(() => assert.fail());
     });
 });
