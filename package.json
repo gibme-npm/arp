@@ -1,6 +1,6 @@
 {
   "name": "@gibme/arp",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A cross-platform arp helper",
   "main": "dist/arp.js",
   "types": "dist/arp.d.ts",
