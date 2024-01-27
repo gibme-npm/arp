@@ -21,6 +21,7 @@
 import * as assert from 'assert';
 import { it, describe } from 'mocha';
 import ARP from '../src/arp';
+
 describe('ARP Tests', () => {
     let gatewayv4: string | undefined;
     let gatewayv6: string | undefined;
