@@ -144,47 +144,51 @@ const macintosh = async (ip: string): Promise<string> => {
     });
 };
 
-export default abstract class ARP {
-    /**
-     * Retrieves the MAC address of the directly connected device at the specified IP address
-     *
-     * @param ip
-     * @param separator
-     */
-    public static async lookup (ip: string, separator = ':'): Promise<string> {
-        if (isIP(ip) === 0) {
-            throw new Error(`${ip} is not a valid IP address`);
-        }
-
-        let result: string;
-
-        if (process.platform.includes('linux')) {
-            result = await linux(ip);
-        } else if (process.platform.includes('darwin')) {
-            result = await macintosh(ip);
-        } else if (process.platform.includes('win')) {
-            result = await windows(ip);
-        } else {
-            throw new Error('Unknown platform detected');
-        }
-
-        return result.split(':')
-            .join(separator);
+/**
+ * Retrieves the MAC address of the directly connected device at the specified IP address
+ *
+ * @param ip
+ * @param separator
+ */
+export const lookup = async (ip: string, separator = ':'): Promise<string> => {
+    if (isIP(ip) === 0) {
+        throw new Error(`${ip} is not a valid IP address`);
     }
 
-    /**
-     * Retrieves the system gateway (default route) ipv4 address
-     */
-    public static async get_gateway_ipv4 (): Promise<string | undefined> {
-        return (await defaultGateway.v4()).gateway;
+    let result: string;
+
+    if (process.platform.includes('linux')) {
+        result = await linux(ip);
+    } else if (process.platform.includes('darwin')) {
+        result = await macintosh(ip);
+    } else if (process.platform.includes('win')) {
+        result = await windows(ip);
+    } else {
+        throw new Error('Unknown platform detected');
     }
 
-    /**
-     * Retrieves the system gateway (default route) ipv6 address
-     */
-    public static async get_gateway_ipv6 (): Promise<string | undefined> {
-        return (await defaultGateway.v6()).gateway;
-    }
-}
+    return result.split(':')
+        .join(separator);
+};
 
-export { ARP };
+/**
+ * Retrieves the system gateway (default route) ipv4 address
+ */
+export const get_gateway_ipv4 = async (): Promise<string | undefined> => {
+    return (await defaultGateway.v4()).gateway;
+};
+
+/**
+ * Retrieves the system gateway (default route) ipv6 address
+ */
+export const get_gateway_ipv6 = async (): Promise<string | undefined> => {
+    return (await defaultGateway.v6()).gateway;
+};
+
+const ARP = {
+    lookup,
+    get_gateway_ipv4,
+    get_gateway_ipv6
+};
+
+export default ARP;
