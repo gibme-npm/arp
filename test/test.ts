@@ -18,9 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import * as assert from 'assert';
+import assert from 'assert';
 import { it, describe } from 'mocha';
-import ARP from '../src/arp';
+import ARP from '../src';
 
 describe('ARP Tests', () => {
     let gatewayv4: string | undefined;
