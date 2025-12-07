@@ -22,6 +22,7 @@ import { spawn } from 'child_process';
 import { isIP } from 'net';
 
 /** @ignore */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const defaultGateway = require('default-gateway');
 
 /** @ignore */
