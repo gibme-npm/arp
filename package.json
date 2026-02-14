@@ -1,6 +1,6 @@
 {
   "name": "@gibme/arp",
-  "version": "20.0.2",
+  "version": "20.1.0",
   "description": "A cross-platform arp helper",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -37,7 +37,7 @@
     "email": "brandonlehmann@gmail.com"
   },
   "dependencies": {
-    "default-gateway": "^6.0.3"
+    "default-gateway": "^7.2.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",

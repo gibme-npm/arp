@@ -26,12 +26,30 @@ import { isIP } from 'net';
 const defaultGateway = require('default-gateway');
 
 /** @ignore */
+const PROCESS_TIMEOUT = 10_000;
+
+/** @ignore */
+const withTimeout = (proc: ReturnType<typeof spawn>, ms: number): NodeJS.Timeout => {
+    return setTimeout(() => {
+        proc.kill();
+    }, ms);
+};
+
+/** @ignore */
 const linux = async (ip: string): Promise<string> => {
     return new Promise((resolve, reject) => {
         const ping = spawn('ping', ['-c', '1', ip]);
+        const pingTimer = withTimeout(ping, PROCESS_TIMEOUT);
+
+        let pingErr = '';
+
+        ping.stderr.on('data', data => { pingErr += data; });
 
         ping.on('close', () => {
+            clearTimeout(pingTimer);
+
             const arp = spawn('arp', ['-n', ip]);
+            const arpTimer = withTimeout(arp, PROCESS_TIMEOUT);
 
             let buffer = '';
             let errStream = '';
@@ -41,10 +59,13 @@ const linux = async (ip: string): Promise<string> => {
             arp.stderr.on('data', data => { errStream += data; });
 
             arp.on('close', code => {
+                clearTimeout(arpTimer);
+
                 if (code !== 0) {
                     return reject(new Error(
                         `Error running arp via [${arp.spawnfile} ${arp.spawnargs.join(' ')}]: ` +
-                        `Code #${code}` + '\n' + errStream));
+                        `Code #${code}` + '\n' + errStream +
+                        (pingErr ? '\nping stderr: ' + pingErr : '')));
                 }
 
                 const table = buffer.split('\n');
@@ -55,7 +76,9 @@ const linux = async (ip: string): Promise<string> => {
 
                     const mac = (parts.length === 5) ? parts[2] : parts[1];
 
-                    return resolve(mac.toUpperCase());
+                    if (mac) {
+                        return resolve(mac.toUpperCase());
+                    }
                 }
 
                 return reject(new Error('Could not find ip in arp table: ' + ip));
@@ -68,9 +91,17 @@ const linux = async (ip: string): Promise<string> => {
 const windows = async (ip: string): Promise<string> => {
     return new Promise((resolve, reject) => {
         const ping = spawn('ping', ['-n', '1', ip]);
+        const pingTimer = withTimeout(ping, PROCESS_TIMEOUT);
+
+        let pingErr = '';
+
+        ping.stderr.on('data', data => { pingErr += data; });
 
         ping.on('close', () => {
+            clearTimeout(pingTimer);
+
             const arp = spawn('arp', ['-a', ip]);
+            const arpTimer = withTimeout(arp, PROCESS_TIMEOUT);
 
             let buffer = '';
             let errStream = '';
@@ -80,10 +111,13 @@ const windows = async (ip: string): Promise<string> => {
             arp.stderr.on('data', data => { errStream += data; });
 
             arp.on('close', code => {
+                clearTimeout(arpTimer);
+
                 if (code !== 0) {
                     return reject(new Error(
                         `Error running arp via [${arp.spawnfile} ${arp.spawnargs.join(' ')}]: ` +
-                        `Code #${code}` + '\n' + errStream));
+                        `Code #${code}` + '\n' + errStream +
+                        (pingErr ? '\nping stderr: ' + pingErr : '')));
                 }
 
                 const table = buffer.split('\r\n');
@@ -109,9 +143,17 @@ const windows = async (ip: string): Promise<string> => {
 const macintosh = async (ip: string): Promise<string> => {
     return new Promise((resolve, reject) => {
         const ping = spawn('ping', ['-c', '1', ip]);
+        const pingTimer = withTimeout(ping, PROCESS_TIMEOUT);
+
+        let pingErr = '';
+
+        ping.stderr.on('data', data => { pingErr += data; });
 
         ping.on('close', () => {
+            clearTimeout(pingTimer);
+
             const arp = spawn('arp', ['-n', ip]);
+            const arpTimer = withTimeout(arp, PROCESS_TIMEOUT);
 
             let buffer = '';
             let errStream = '';
@@ -121,20 +163,22 @@ const macintosh = async (ip: string): Promise<string> => {
             arp.stderr.on('data', data => { errStream += data; });
 
             arp.on('close', code => {
+                clearTimeout(arpTimer);
+
                 if (code !== 0 && errStream !== '') {
                     return reject(new Error(
                         `Error running arp via [${arp.spawnfile} ${arp.spawnargs.join(' ')}]: ` +
-                        `Code #${code}` + '\n' + errStream));
+                        `Code #${code}` + '\n' + errStream +
+                        (pingErr ? '\nping stderr: ' + pingErr : '')));
                 }
 
                 const parts = buffer.split(' ')
                     .filter(String);
 
                 if (parts[3] !== 'no') {
-                    const mac = parts[3].replace(/^0:/g, '00:')
-                        .replace(/:0:/g, ':00:')
-                        .replace(/:0$/g, ':00')
-                        .replace(/:([^:]{1}):/g, ':0$1:');
+                    const mac = parts[3].split(':')
+                        .map(octet => octet.padStart(2, '0'))
+                        .join(':');
 
                     return resolve(mac.toUpperCase());
                 }
@@ -146,10 +190,15 @@ const macintosh = async (ip: string): Promise<string> => {
 };
 
 /**
- * Retrieves the MAC address of the directly connected device at the specified IP address
+ * Looks up the MAC address for a device on your local network by its IP address.
  *
- * @param ip
- * @param separator
+ * Works by pinging the target first (to populate the ARP table), then reading
+ * the system ARP cache. Supports Linux, macOS, and Windows out of the box.
+ *
+ * @param ip - the IPv4 or IPv6 address to look up
+ * @param separator - the character used between MAC octets (defaults to `:`)
+ * @returns the MAC address as an uppercase string (e.g. `AA:BB:CC:DD:EE:FF`)
+ * @throws if the IP is invalid or the address can't be found in the ARP table
  */
 export const lookup = async (ip: string, separator = ':'): Promise<string> => {
     if (isIP(ip) === 0) {
@@ -173,17 +222,29 @@ export const lookup = async (ip: string, separator = ':'): Promise<string> => {
 };
 
 /**
- * Retrieves the system gateway (default route) ipv4 address
+ * Returns your system's default gateway IPv4 address, or `undefined` if one isn't available.
+ *
+ * Handy for discovering the local router so you can pass it straight into {@link lookup}.
  */
 export const get_gateway_ipv4 = async (): Promise<string | undefined> => {
-    return (await defaultGateway.v4()).gateway;
+    try {
+        return (await defaultGateway.gateway4async()).gateway;
+    } catch {
+        return undefined;
+    }
 };
 
 /**
- * Retrieves the system gateway (default route) ipv6 address
+ * Returns your system's default gateway IPv6 address, or `undefined` if one isn't available.
+ *
+ * Same idea as {@link get_gateway_ipv4}, but for IPv6 networks.
  */
 export const get_gateway_ipv6 = async (): Promise<string | undefined> => {
-    return (await defaultGateway.v6()).gateway;
+    try {
+        return (await defaultGateway.gateway6async()).gateway;
+    } catch {
+        return undefined;
+    }
 };
 
 const ARP = {
