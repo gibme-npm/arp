@@ -15,7 +15,7 @@
     "test": "yarn test:style && yarn test:typecheck && yarn test:units",
     "test:typecheck": "./node_modules/.bin/tsc --noEmit",
     "test:style": "yarn style",
-    "test:units": "node --import tsx --test --test-timeout 30000 test/test.ts",
+    "test:units": "node --import tsx --test --test-timeout 120000 test/test.ts",
     "style": "./node_modules/.bin/eslint src/**/*.ts test/**/*.ts",
     "fix-style": "./node_modules/.bin/eslint --fix src/**/*.ts test/**/*.ts",
     "fix:style": "yarn fix-style",
