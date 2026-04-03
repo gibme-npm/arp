@@ -20,7 +20,7 @@
 
 import assert from 'assert';
 import { isIP } from 'net';
-import { it, describe } from 'mocha';
+import { it, describe, before } from 'node:test';
 import ARP from '../src';
 
 describe('ARP Tests', () => {
@@ -32,9 +32,9 @@ describe('ARP Tests', () => {
         gatewayv6 = await ARP.get_gateway_ipv6();
     });
 
-    it('Get Gateway IPv4', async function () {
+    it('Get Gateway IPv4', { skip: false }, async (t) => {
         if (!gatewayv4) {
-            return this.skip();
+            return t.skip('No IPv4 gateway available');
         }
 
         const check = await ARP.get_gateway_ipv4();
@@ -42,9 +42,9 @@ describe('ARP Tests', () => {
         assert.equal(gatewayv4, check);
     });
 
-    it('Get Gateway IPv6', async function () {
+    it('Get Gateway IPv6', { skip: false }, async (t) => {
         if (!gatewayv6) {
-            return this.skip();
+            return t.skip('No IPv6 gateway available');
         }
 
         const check = await ARP.get_gateway_ipv6();
@@ -52,9 +52,9 @@ describe('ARP Tests', () => {
         assert.equal(gatewayv6, check);
     });
 
-    it('Lookup IPv4 Gateway', async function () {
+    it('Lookup IPv4 Gateway', { skip: false }, async (t) => {
         if (!gatewayv4) {
-            return this.skip();
+            return t.skip('No IPv4 gateway available');
         }
 
         const check = await ARP.lookup(gatewayv4);
@@ -62,14 +62,14 @@ describe('ARP Tests', () => {
         assert.notEqual(check.length, 0);
     });
 
-    it('Lookup IPv6 Gateway', async function () {
+    it('Lookup IPv6 Gateway', { skip: false }, async (t) => {
         if (!gatewayv6) {
-            return this.skip();
+            return t.skip('No IPv6 gateway available');
         }
 
         // TODO: implement code
 
-        this.skip();
+        t.skip('Not yet implemented');
     });
 
     it('Lookup 8.8.8.8 [fails]', async () => {
@@ -106,9 +106,9 @@ describe('MAC Format', () => {
         gatewayv4 = await ARP.get_gateway_ipv4();
     });
 
-    it('Length check', async function () {
+    it('Length check', { skip: false }, async (t) => {
         if (!gatewayv4) {
-            return this.skip();
+            return t.skip('No IPv4 gateway available');
         }
 
         const mac = await ARP.lookup(gatewayv4);
@@ -116,9 +116,9 @@ describe('MAC Format', () => {
         assert.equal(mac.length, 17);
     });
 
-    it('Format regex', async function () {
+    it('Format regex', { skip: false }, async (t) => {
         if (!gatewayv4) {
-            return this.skip();
+            return t.skip('No IPv4 gateway available');
         }
 
         const mac = await ARP.lookup(gatewayv4);
@@ -134,9 +134,9 @@ describe('Custom Separator', () => {
         gatewayv4 = await ARP.get_gateway_ipv4();
     });
 
-    it('Dash separator', async function () {
+    it('Dash separator', { skip: false }, async (t) => {
         if (!gatewayv4) {
-            return this.skip();
+            return t.skip('No IPv4 gateway available');
         }
 
         const mac = await ARP.lookup(gatewayv4, '-');
@@ -144,9 +144,9 @@ describe('Custom Separator', () => {
         assert.match(mac, /^([0-9A-F]{2}-){5}[0-9A-F]{2}$/);
     });
 
-    it('No separator', async function () {
+    it('No separator', { skip: false }, async (t) => {
         if (!gatewayv4) {
-            return this.skip();
+            return t.skip('No IPv4 gateway available');
         }
 
         const mac = await ARP.lookup(gatewayv4, '');
@@ -155,9 +155,9 @@ describe('Custom Separator', () => {
         assert.match(mac, /^[0-9A-F]{12}$/);
     });
 
-    it('Default separator', async function () {
+    it('Default separator', { skip: false }, async (t) => {
         if (!gatewayv4) {
-            return this.skip();
+            return t.skip('No IPv4 gateway available');
         }
 
         const mac = await ARP.lookup(gatewayv4);
