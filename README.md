@@ -12,7 +12,7 @@ yarn add @gibme/arp
 npm install @gibme/arp
 ```
 
-Requires **Node >= 20**.
+Requires **Node >= 22**.
 
 ## Quick Start
 
